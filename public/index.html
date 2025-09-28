@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cotización - Sanare</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+
+<!-- Overlay de login -->
+<div id="loginOverlay" style="
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center;
+  z-index: 9999; color: white; font-family: Arial, sans-serif;">
+  <div style="background: #222; padding: 30px; border-radius: 10px; text-align: center; max-width: 300px; width: 100%;">
+    <h2>🔒 Acceso Sanare</h2>
+    <input id="user" type="text" placeholder="Usuario" style="margin:10px; padding:8px; width: 90%;"><br>
+    <input id="pass" type="password" placeholder="Contraseña" style="margin:10px; padding:8px; width: 90%;"><br>
+    <button onclick="login()" style="padding:10px 20px; background:#0a9396; border:none; border-radius:5px; color:white; cursor:pointer;">Entrar</button>
+    <p id="errorMsg" style="color:red; display:none; margin-top:10px;">Credenciales inválidas</p>
+  </div>
+</div>
+
+  <main id="cotizador">
+    <header class="header">
+      <img src="SANARE_logo.png" alt="Sanare" class="logo" />
+      <div class="empresa">
+        <h1>Cotización</h1>
+        <label>Dirección de la empresa</label>
+        <select id="direccion"></select>
+<div id="telefono" style="margin-top:5px; font-weight:bold;"></div>
+
+        <div class="tel">Teléfono:</div>
+      </div>
+      <div class="extras">
+        <label>Fecha de emisión</label>
+        <input type="date" id="fechaEmision" />
+        <label>Presupuesto válido hasta</label>
+        <input type="date" id="fechaValidez" />
+        <label>Realizado por</label>
+        <input type="text" id="realizadoPor" placeholder="Corporativo" />
+      </div>
+    </header>
+
+    <section class="datos">
+      <div>
+        <label>Nombre del paciente</label>
+        <input id="paciente" placeholder="Nombre del paciente" />
+      </div>
+      <div>
+        <label>Nombre del médico</label>
+        <input id="medico" placeholder="Nombre del médico" />
+      </div>
+      <div>
+        <label>Aseguradora</label>
+        <input id="aseguradora" placeholder="Pago de bolsillo" />
+      </div>
+      <div class="full">
+        <label>DX / Comentarios</label>
+        <textarea id="dx" rows="2" placeholder="Diagnóstico / comentarios"></textarea>
+      </div>
+      <div>
+        <label>Esquema o tratamiento</label>
+        <input id="esquema" placeholder="Ej. OXALIPLATINO" />
+      </div>
+      <div>
+        <label>KAM</label>
+        <input id="kam" placeholder="Corporativo / Nombre" />
+      </div>
+      <div>
+        <label>Fecha de programación</label>
+        <input type="date" id="fecha" />
+      </div>
+    </section>
+
+    <section>
+      <h2>Medicamentos</h2>
+      <div class="fila">
+        <input type="text" id="buscarMed" placeholder="Buscar medicamento o código..." />
+        <select id="ordenMed">
+          <option value="nombre">Ordenar por: A–Z</option>
+          <option value="precio">Ordenar por: Precio (desc)</option>
+        </select>
+      </div>
+      <div class="fila">
+        <select id="selMedicamento"></select>
+        <input type="number" id="cantMed" min="1" value="1" />
+        <button id="addMed">Agregar medicamento</button>
+      </div>
+      <table id="tablaMedicamentos">
+        <thead>
+          <tr><th>Medicamento</th><th>Código</th><th>Cantidad</th><th>P. unitario</th><th>Subtotal</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Servicios</h2>
+      <div class="fila">
+        <select id="selServicio"></select>
+        <input type="number" id="cantServ" min="1" value="1" />
+        <label>Descuento (%)</label>
+        <input type="number" id="descServ" min="0" max="100" value="0" />
+        <button id="addServ">Agregar servicio</button>
+      </div>
+      <table id="tablaServicios">
+        <thead>
+          <tr><th>Servicio</th><th>Cantidad</th><th>P. unitario</th><th>Descuento (%)</th><th>Total c/desc.</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="totales">
+      <div class="grid">
+        <div><span>Subtotal</span><strong id="subtotal">$ 0.00</strong></div>
+        <div><span>IVA sobre Servicios (16%)</span><strong id="iva">$ 0.00</strong></div>
+        <div class="total"><span>TOTAL</span><strong id="total">$ 0.00</strong></div>
+      </div>
+      
+<p class="disclaimer">
+  La presente cotización es válida por 15 días e incluye únicamente los conceptos señalados; 
+  cualquier servicio adicional será cotizado aparte; el pago deberá realizarse al momento del ingreso, 
+  pacientes de aseguradora debe presentarse con su carta de autorización vigente; 
+  En caso de cancelación el paciente deberá avisar con al menos 24 horas de anticipación, 
+  de lo contrario se cobrará el medicamento y los servicios asociados al medicamento; 
+  La presente cotización está sujeta a cambios si el médico tratante así lo indica.
+</p>
+<button id="btnPDF">Descargar PDF</button>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+
+  <!-- Librerías para PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const btn = document.getElementById("btnPDF");
+    if (!btn) return;
+
+    btn.addEventListener("click", function() {
+      const { jsPDF } = window.jspdf;
+      html2canvas(document.getElementById("cotizador"), { 
+        scale: 2, 
+        useCORS: true,
+        onclone: (clonedDoc) => {
+          clonedDoc.querySelectorAll(
+            '#buscarMed, #ordenMed, #selMedicamento, #cantMed, #selServicio, #cantServ, #descServ, #addMed, #addServ, .btn-eliminar, #btnPDF, table button'
+          ).forEach(el => el.style.display = 'none');
+        }
+      }).then(function(canvas) {
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        let imgWidth = pageWidth;
+        let imgHeight = (canvas.height * imgWidth) / canvas.width;
+        if (imgHeight > pageHeight) {
+          const ratio = pageHeight / imgHeight;
+          imgWidth *= ratio;
+          imgHeight *= ratio;
+        }
+
+        const x = (pageWidth - imgWidth) / 2;
+        pdf.addImage(imgData, "PNG", x, 0, imgWidth, imgHeight);
+
+        // Datos dinámicos
+        let paciente = document.getElementById("paciente").value || "Paciente";
+        let fecha = document.getElementById("fechaEmision").value || new Date().toISOString().split("T")[0];
+
+        paciente = paciente.replace(/[^a-z0-9]/gi, "_");
+        fecha = fecha.replace(/[^0-9\-]/g, "_");
+
+        let nombreArchivo = `Sanare_${paciente}_${fecha}.pdf`;
+        pdf.save(nombreArchivo);
+      });
+    });
+  });
+  </script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  var direccion = document.getElementById("direccion");
+  var telefono = document.getElementById("telefono");
+  if(direccion){
+    direccion.addEventListener("change", function() {
+      if(this.value === "Toluca"){
+        telefono.textContent = "Tel: 722 197 08 36";
+      } else if(this.value === "Narvarte"){
+        telefono.textContent = "Tel: 55 5255 8403";
+      } else {
+        telefono.textContent = "";
+      }
+    });
+  }
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  var direccion = document.getElementById("direccion");
+  var telefono = document.getElementById("telefono");
+  if(direccion && telefono){
+    function actualizarTelefono() {
+      var val = direccion.value;
+      if(val.includes("Toluca")){
+        telefono.textContent = "722 197 08 36";
+      } else if(val.includes("Narvarte")){
+        telefono.textContent = "55 5255 8403";
+      } else {
+        telefono.textContent = "";
+      }
+    }
+    direccion.addEventListener("change", actualizarTelefono);
+    actualizarTelefono(); // Ejecutar al cargar
+  }
+});
+</script>
+
+
+<script>
+  function login() {
+    const user = document.getElementById("user").value;
+    const pass = document.getElementById("pass").value;
+
+    // Usuarios válidos
+    const users = {
+      "sanare": "2025",
+      "medico1": "clave1",
+      "medico2": "clave2",
+      "admin": "superseguro"
+    };
+
+    if (users[user] && users[user] === pass) {
+      document.getElementById("loginOverlay").style.display = "none";
+    } else {
+      document.getElementById("errorMsg").style.display = "block";
+    }
+  }
+</script>
+
+</body>
+</html>
+
+
+  
